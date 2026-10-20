@@ -1,0 +1,39 @@
+{
+  "grid": 0.1,
+  "categories": [
+    { "key": "toilets", "filter": "n/amenity=toilets" },
+    { "key": "drinking_water", "filter": "n/amenity=drinking_water" },
+    { "key": "aed", "filter": "n/emergency=defibrillator" },
+    { "key": "atm", "filter": "n/amenity=atm" }
+  ],
+  "countries": [
+    { "code": "BE", "name": "Belgium", "geofabrik": "europe/belgium", "enabled": true },
+
+    { "code": "AT", "name": "Austria", "geofabrik": "europe/austria", "enabled": false },
+    { "code": "BG", "name": "Bulgaria", "geofabrik": "europe/bulgaria", "enabled": false },
+    { "code": "HR", "name": "Croatia", "geofabrik": "europe/croatia", "enabled": false },
+    { "code": "CY", "name": "Cyprus", "geofabrik": "europe/cyprus", "enabled": false },
+    { "code": "CZ", "name": "Czechia", "geofabrik": "europe/czech-republic", "enabled": false },
+    { "code": "DK", "name": "Denmark", "geofabrik": "europe/denmark", "enabled": false },
+    { "code": "EE", "name": "Estonia", "geofabrik": "europe/estonia", "enabled": false },
+    { "code": "FI", "name": "Finland", "geofabrik": "europe/finland", "enabled": false },
+    { "code": "FR", "name": "France", "geofabrik": "europe/france", "enabled": false },
+    { "code": "DE", "name": "Germany", "geofabrik": "europe/germany", "enabled": false },
+    { "code": "GR", "name": "Greece", "geofabrik": "europe/greece", "enabled": false },
+    { "code": "HU", "name": "Hungary", "geofabrik": "europe/hungary", "enabled": false },
+    { "code": "IE", "name": "Ireland", "geofabrik": "europe/ireland-and-northern-ireland", "enabled": false },
+    { "code": "IT", "name": "Italy", "geofabrik": "europe/italy", "enabled": false },
+    { "code": "LV", "name": "Latvia", "geofabrik": "europe/latvia", "enabled": false },
+    { "code": "LT", "name": "Lithuania", "geofabrik": "europe/lithuania", "enabled": false },
+    { "code": "LU", "name": "Luxembourg", "geofabrik": "europe/luxembourg", "enabled": false },
+    { "code": "MT", "name": "Malta", "geofabrik": "europe/malta", "enabled": false },
+    { "code": "NL", "name": "Netherlands", "geofabrik": "europe/netherlands", "enabled": false },
+    { "code": "PL", "name": "Poland", "geofabrik": "europe/poland", "enabled": false },
+    { "code": "PT", "name": "Portugal", "geofabrik": "europe/portugal", "enabled": false },
+    { "code": "RO", "name": "Romania", "geofabrik": "europe/romania", "enabled": false },
+    { "code": "SK", "name": "Slovakia", "geofabrik": "europe/slovakia", "enabled": false },
+    { "code": "SI", "name": "Slovenia", "geofabrik": "europe/slovenia", "enabled": false },
+    { "code": "ES", "name": "Spain", "geofabrik": "europe/spain", "enabled": false },
+    { "code": "SE", "name": "Sweden", "geofabrik": "europe/sweden", "enabled": false }
+  ]
+}
