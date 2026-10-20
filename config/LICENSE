@@ -1,0 +1,30 @@
+Open Database License (ODbL) v1.0
+=================================
+
+The database in this repository — the JSON cell files, index files and
+manifests produced by .github/workflows/build-data.yml — is made available
+under the Open Database License, version 1.0:
+
+  https://opendatacommons.org/licenses/odbl/1-0/
+
+Individual contents of the database are licensed under the Database
+Contents License, version 1.0:
+
+  https://opendatacommons.org/licenses/dbcl/1-0/
+
+The underlying data is © OpenStreetMap contributors and is available under
+the ODbL: https://www.openstreetmap.org/copyright
+
+You are free to copy, distribute, transmit and adapt this database, provided
+that you:
+
+  * attribute it to "© OpenStreetMap contributors" (linked to
+    https://www.openstreetmap.org/copyright) and to this project;
+  * keep any derivative database that you publicly use under the ODbL;
+  * keep intact all copyright, license and attribution notices;
+  * make the full ODbL text available to anyone who receives the database.
+
+This file is a notice, not the license text. The authoritative text is the
+ODbL 1.0 at the URL above. To add it verbatim through the GitHub web UI, use
+Add file → Create new file → LICENSE → "Choose a license template" →
+"Open Data Commons Open Database License v1.0".
