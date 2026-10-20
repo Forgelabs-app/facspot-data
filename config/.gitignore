@@ -1,0 +1,12 @@
+# Generated data — never committed. The workflow moves cell files through
+# artifacts and a data-latest release asset; nothing else belongs in git.
+dist/
+incoming/
+baseline/
+work/
+dataset.tar.gz
+
+# Intermediates if you run the pipeline locally
+*.osm.pbf
+*.geojsonseq
+node_modules/
