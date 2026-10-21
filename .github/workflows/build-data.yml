@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       only:
-        description: 'Comma-separated ISO codes to rebuild (e.g. BE). Empty = all enabled countries.'
+        description: 'Comma-separated ISO codes to rebuild (e.g. PT). When set, ONLY these are built, enabled or not. Empty = all enabled countries.'
         required: false
         type: string
         default: ''
@@ -58,7 +58,9 @@ jobs:
                 then error("unknown country code(s): \($unknown | join(", "))")
                 else . end
               | [ .countries[] as $c
-                  | select($c.enabled or ($wanted | index($c.code)) != null)
+                  | select(if ($wanted | length) > 0
+                      then ($wanted | index($c.code)) != null
+                      else $c.enabled end)
                   | { code: $c.code, name: $c.name, geofabrik: $c.geofabrik } ]
               | if length == 0
                 then error("no countries enabled or selected")
@@ -79,8 +81,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
-      # Keep going so one bad country does not hide the others; the deploy
-      # job below still refuses to publish anything unless every job passed.
+      # Keep going so one bad country does not hide the others: the deploy job
+      # publishes whatever succeeded and keeps a failed country's last good
+      # copy from the data-latest baseline.
       fail-fast: false
       max-parallel: 4
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
@@ -181,9 +184,12 @@ jobs:
   deploy:
     name: Merge and deploy
     needs: [prepare, build]
-    # A failed or skipped matrix job means no publish at all, so the site
-    # keeps the previous (complete) dataset instead of a partial one.
-    if: needs.build.result == 'success'
+    # Publish whatever succeeded. A failed country is not dropped: the restore
+    # step below puts its last good copy back from the data-latest baseline,
+    # and the report step names the countries that were not refreshed. A run
+    # where every build failed still publishes nothing — the "no country
+    # artifacts" guard fails the job before the Pages upload — and turns red.
+    if: always() && needs.prepare.result == 'success' && needs.build.result != 'cancelled'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -196,6 +202,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v4
+        # Errors when zero artifacts match, which is what an all-failed run
+        # looks like. Keep going so the report step can name those countries;
+        # the explicit guard below then fails the job without publishing.
+        continue-on-error: true
         with:
           pattern: data-*
           path: incoming
@@ -216,6 +226,27 @@ jobs:
           else
             echo "No data-latest release yet; publishing a fresh set"
           fi
+
+      - name: Report countries that were not refreshed
+        if: needs.build.result != 'success'
+        env:
+          MATRIX: ${{ needs.prepare.outputs.matrix }}
+        run: |
+          set -euo pipefail
+          printf '\n### Countries not refreshed in this run\n\n| Code | Status |\n| --- | --- |\n' >> "$GITHUB_STEP_SUMMARY"
+          failed=0
+          for cc in $(jq -r '.include[].code' <<<"$MATRIX"); do
+            if [ -d "incoming/data-$cc" ]; then continue; fi
+            failed=$((failed + 1))
+            if [ -d "dist/v1/$cc" ]; then
+              printf '| `%s` | build failed — previous published data kept |\n' "$cc" >> "$GITHUB_STEP_SUMMARY"
+              echo "::warning title=$cc::$cc build failed; previous published data kept"
+            else
+              printf '| `%s` | build failed — no baseline, not published |\n' "$cc" >> "$GITHUB_STEP_SUMMARY"
+              echo "::error title=$cc::$cc build failed and no published baseline exists"
+            fi
+          done
+          echo "merge-manifest: $failed country build(s) failed; see the summary" >&2
 
       - name: Overlay freshly built countries
         run: |
