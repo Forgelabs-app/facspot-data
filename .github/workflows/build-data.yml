@@ -4,6 +4,12 @@ name: Build static POI data
 # Nothing generated is ever committed: cell files travel from the build
 # matrix into the deploy job as artifacts, and the last published set is
 # kept as a release asset (data-latest) so a partial run can merge onto it.
+#
+# The weekly run is split into four rotation groups (1-4, set per country in
+# config/countries.json). A scheduled run builds only the enabled countries
+# whose group matches `ISO week % 4 + 1`, so every country refreshes once per
+# four weeks and one Monday downloads roughly 8 GB instead of ~31 GB. Manual
+# runs that name countries with `only` are exact and ignore groups entirely.
 
 on:
   schedule:
@@ -13,10 +19,15 @@ on:
   workflow_dispatch:
     inputs:
       only:
-        description: 'Comma-separated ISO codes to rebuild (e.g. PT). When set, ONLY these are built, enabled or not. Empty = all enabled countries.'
+        description: 'Comma-separated ISO codes to rebuild (e.g. PT or US-CA). When set, ONLY these are built — enabled or not, groups ignored. Empty = this ISO week''s rotation group.'
         required: false
         type: string
         default: ''
+      all:
+        description: 'Ignore the rotation and rebuild every enabled country (full refresh). `only` wins over this.'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -32,6 +43,8 @@ jobs:
     outputs:
       matrix: ${{ steps.select.outputs.matrix }}
       filters: ${{ steps.select.outputs.filters }}
+      group: ${{ steps.select.outputs.group }}
+      week: ${{ steps.select.outputs.week }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,6 +52,7 @@ jobs:
         id: select
         env:
           ONLY: ${{ github.event.inputs.only }}
+          ALL: ${{ github.event.inputs.all }}
         run: |
           set -euo pipefail
           only="$(printf '%s' "${ONLY:-}" \
@@ -48,29 +62,62 @@ jobs:
             | sed '/^$/d' \
             | sort -u \
             | paste -sd, -)"
+          # ISO week of this run -> rotation group 1-4. The schedule fires
+          # Mondays 03:17 UTC, so this is the week the run belongs to.
+          week="$(date -u +%V)"
+          group=$(( 10#$week % 4 + 1 ))
+          if [ -n "$only" ]; then
+            selector=only
+          elif [ "${ALL:-false}" = "true" ]; then
+            selector=all
+          else
+            selector=group
+          fi
           filters="$(jq -r '[.categories[].filter] | join(" ")' config/countries.json)"
           matrix="$(
-            jq -c --arg only "$only" '
+            jq -c --arg only "$only" --arg sel "$selector" \
+              --argjson group "$group" --arg week "$week" '
               ($only | split(",") | map(select(length > 0))) as $wanted
               | (.countries | map(.code)) as $known
+              | (.countries
+                  | map(select(
+                      (.group as $g
+                       | if ($g | type) == "number"
+                         then (($g >= 1) and ($g <= 4) and (($g | floor) == $g))
+                         else false end)
+                      | not))
+                  | map(.code)) as $badGroup
+              | if ($badGroup | length) > 0
+                then error("country code(s) without a valid group (integer 1-4): \($badGroup | join(", "))")
+                else . end
               | ($wanted - $known) as $unknown
               | if ($unknown | length) > 0
                 then error("unknown country code(s): \($unknown | join(", "))")
                 else . end
               | [ .countries[] as $c
-                  | select(if ($wanted | length) > 0
+                  | select(if $sel == "only"
                       then ($wanted | index($c.code)) != null
-                      else $c.enabled end)
+                      elif $sel == "all"
+                      then $c.enabled
+                      else ($c.enabled and $c.group == $group) end)
                   | { code: $c.code, name: $c.name, geofabrik: $c.geofabrik } ]
               | if length == 0
-                then error("no countries enabled or selected")
+                then error("nothing to build: \(if $sel == "group" then "no enabled country in group \($group) (ISO week \($week))" else "no enabled country" end)")
                 else { include: . } end
             ' config/countries.json
           )"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "filters=$filters" >> "$GITHUB_OUTPUT"
+          echo "group=$group" >> "$GITHUB_OUTPUT"
+          echo "week=$week" >> "$GITHUB_OUTPUT"
           {
             echo "### Countries in this run"
+            echo
+            case "$selector" in
+              only) echo "Selection: \`only\` — exactly the requested codes, groups ignored." ;;
+              all) echo "Selection: \`all\` — every enabled country, groups ignored." ;;
+              *) echo "Selection: rotation group **$group** (ISO week $week: $week % 4 + 1)." ;;
+            esac
             echo
             jq -r '.include[] | "- `\(.code)` — \(.name) (`\(.geofabrik)`)"' <<<"$matrix"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -270,8 +317,15 @@ jobs:
         run: node scripts/merge-manifest.mjs --dir dist --config config/countries.json
 
       - name: Summarise
+        env:
+          GROUP: ${{ needs.prepare.outputs.group }}
+          WEEK: ${{ needs.prepare.outputs.week }}
         run: |
-          jq -r '"**\(.total) POIs** in \(.cells) cells across \(.countries | length) countries\n\nData timestamp: `\(.datasetTimestamp)`", "", "| Code | POIs | Cells | JSON |", "| --- | ---: | ---: | ---: |", (.countries | to_entries[] | "| \(.key) | \(.value.pois) | \(.value.cells) | \(.value.bytes) B |")' dist/manifest.json >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "**Rotation:** ISO week \`$WEEK\` → group \`$GROUP\`"
+            echo
+            jq -r '"**\(.total) POIs** in \(.cells) cells across \(.countries | length) countries\n\nData timestamp: `\(.datasetTimestamp)`", "", "| Code | POIs | Cells | JSON |", "| --- | ---: | ---: | ---: |", (.countries | to_entries[] | "| \(.key) | \(.value.pois) | \(.value.cells) | \(.value.bytes) B |")' dist/manifest.json
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
