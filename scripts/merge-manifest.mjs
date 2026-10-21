@@ -11,6 +11,16 @@
  *
  * Exits non-zero on any inconsistency, so a broken country directory can
  * never be published as part of a "successful" deployment.
+ *
+ * Selection bbox: a country entry in config/countries.json may carry an
+ * optional "bbox": [west, south, east, north]. When present it replaces the
+ * derived (grid-snapped) cellBBox for that country IN THE ROOT MANIFEST ONLY;
+ * the per-country manifest.json keeps the true data extent. The app uses
+ * cellBBox to pick one country folder per position (smallest area wins), so
+ * the override exists for countries whose data bbox is much larger than the
+ * area that should be served statically (Portugal: Azores + Madeira stretch
+ * the derived bbox to 25° of longitude, which made Spain win for the whole
+ * mainland). Invalid overrides fail the run.
  */
 
 import { readdir, readFile, writeFile } from 'node:fs/promises'
@@ -44,6 +54,48 @@ function humanBytes(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`
 }
 
+function isFiniteNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+/**
+ * The bbox the app will use to choose this country's folder for a position.
+ * `derived` is the grid-snapped data bbox from the country manifest; pass
+ * null when only the config value needs validating (pre-flight check).
+ */
+function resolveCellBBox(code, configCountry, derived) {
+  const override = configCountry?.bbox
+  if (override == null) return derived
+
+  if (!Array.isArray(override) || override.length !== 4) {
+    throw new Error(`${code}: bbox must be [west, south, east, north] (4 numbers), got ${JSON.stringify(override)}`)
+  }
+  if (!override.every(isFiniteNumber)) {
+    throw new Error(`${code}: bbox must contain only finite numbers, got ${JSON.stringify(override)}`)
+  }
+  const [west, south, east, north] = override
+  if (!(west < east)) throw new Error(`${code}: bbox west (${west}) must be < east (${east})`)
+  if (!(south < north)) throw new Error(`${code}: bbox south (${south}) must be < north (${north})`)
+  if (west < -180 || east > 180) {
+    throw new Error(`${code}: bbox longitudes must be within [-180, 180], got ${west}..${east}`)
+  }
+  if (south < -90 || north > 90) {
+    throw new Error(`${code}: bbox latitudes must be within [-90, 90], got ${south}..${north}`)
+  }
+  // Not fatal: the override is a selection box, so being slightly larger than
+  // the occupied grid is legal — but it usually means a typo, so say so.
+  if (Array.isArray(derived) && derived.length === 4) {
+    const [derivedWest, derivedSouth, derivedEast, derivedNorth] = derived
+    if (west < derivedWest || south < derivedSouth || east > derivedEast || north > derivedNorth) {
+      process.stderr.write(
+        `merge-manifest: warning: ${code} bbox ${JSON.stringify(override)} extends beyond the data bbox ` +
+          `${JSON.stringify(derived)}; the app will still offer the extra area but has no cells there\n`,
+      )
+    }
+  }
+  return override
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   if (!args.dir) throw new Error('--dir is required')
@@ -54,6 +106,17 @@ async function main() {
   const categories = (config.categories ?? []).map((c) => c.key)
   if (!Number.isFinite(grid) || grid <= 0) throw new Error('config.grid must be a positive number')
   if (categories.length === 0) throw new Error('config.categories is empty')
+
+  const configCountries = config.countries ?? []
+  const configByCode = new Map()
+  for (const country of configCountries) {
+    if (!country?.code) throw new Error(`config.countries entry without a code: ${JSON.stringify(country)}`)
+    if (configByCode.has(country.code)) throw new Error(`duplicate country code in config: ${country.code}`)
+    configByCode.set(country.code, country)
+    // Validate every bbox in the config, including countries that are not part
+    // of this run, so a typo cannot hide until the country is next built.
+    resolveCellBBox(country.code, country, null)
+  }
 
   const v1 = path.join(dir, 'v1')
   const codes = (await readdir(v1, { withFileTypes: true }))
@@ -102,7 +165,7 @@ async function main() {
       blocks: manifest.blocks,
       bytes: manifest.bytes,
       counts: manifest.counts,
-      cellBBox: manifest.cellBBox,
+      cellBBox: resolveCellBBox(code, configByCode.get(code), manifest.cellBBox),
     }
 
     total += manifest.total
@@ -112,7 +175,7 @@ async function main() {
     if (manifest.version > version) version = manifest.version
   }
 
-  const enabled = (config.countries ?? []).filter((c) => c.enabled).map((c) => c.code)
+  const enabled = configCountries.filter((c) => c.enabled).map((c) => c.code)
   const missing = enabled.filter((code) => !countries[code])
 
   const root = {
