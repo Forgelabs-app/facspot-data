@@ -137,12 +137,12 @@
     { "code": "TH", "name": "Thailand", "geofabrik": "asia/thailand", "pbfBytes": 329048640, "enabled": false, "group": 4 },
     { "code": "VN", "name": "Vietnam", "geofabrik": "asia/vietnam", "pbfBytes": 331032986, "enabled": false, "group": 1 },
 
-    { "code": "CD", "name": "DR Congo", "geofabrik": "africa/congo-democratic-republic", "pbfBytes": 416294282, "enabled": false, "group": 2 },
-    { "code": "EG", "name": "Egypt", "geofabrik": "africa/egypt", "pbfBytes": 178855811, "enabled": false, "group": 1 },
-    { "code": "ET", "name": "Ethiopia", "geofabrik": "africa/ethiopia", "pbfBytes": 140081637, "enabled": false, "group": 4 },
-    { "code": "KE", "name": "Kenya", "geofabrik": "africa/kenya", "pbfBytes": 351578877, "enabled": false, "group": 2 },
-    { "code": "NG", "name": "Nigeria", "geofabrik": "africa/nigeria", "pbfBytes": 711626366, "enabled": false, "group": 1 },
-    { "code": "TZ", "name": "Tanzania", "geofabrik": "africa/tanzania", "pbfBytes": 706777532, "enabled": false, "group": 2 },
-    { "code": "ZA", "name": "South Africa", "geofabrik": "africa/south-africa", "pbfBytes": 422854460, "enabled": false, "group": 3 }
+    { "code": "CD", "name": "DR Congo", "geofabrik": "africa/congo-democratic-republic", "pbfBytes": 416294282, "enabled": true, "group": 2 },
+    { "code": "EG", "name": "Egypt", "geofabrik": "africa/egypt", "pbfBytes": 178855811, "enabled": true, "group": 1 },
+    { "code": "ET", "name": "Ethiopia", "geofabrik": "africa/ethiopia", "pbfBytes": 140081637, "enabled": true, "group": 4 },
+    { "code": "KE", "name": "Kenya", "geofabrik": "africa/kenya", "pbfBytes": 351578877, "enabled": true, "group": 2 },
+    { "code": "NG", "name": "Nigeria", "geofabrik": "africa/nigeria", "pbfBytes": 711626366, "enabled": true, "group": 1 },
+    { "code": "TZ", "name": "Tanzania", "geofabrik": "africa/tanzania", "pbfBytes": 706777532, "enabled": true, "group": 2 },
+    { "code": "ZA", "name": "South Africa", "geofabrik": "africa/south-africa", "pbfBytes": 422854460, "enabled": true, "group": 3 }
   ]
 }
