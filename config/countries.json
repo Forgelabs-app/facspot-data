@@ -122,10 +122,10 @@
     { "code": "CA-SK", "name": "Saskatchewan", "geofabrik": "north-america/canada/saskatchewan", "pbfBytes": 117753007, "enabled": false, "group": 1 },
     { "code": "CA-YT", "name": "Yukon", "geofabrik": "north-america/canada/yukon", "pbfBytes": 84352026, "enabled": false, "group": 2 },
 
-    { "code": "AR", "name": "Argentina", "geofabrik": "south-america/argentina", "pbfBytes": 433595014, "enabled": false, "group": 1 },
-    { "code": "BR", "name": "Brazil", "geofabrik": "south-america/brazil", "pbfBytes": 2096862892, "enabled": false, "group": 3 },
+    { "code": "AR", "name": "Argentina", "geofabrik": "south-america/argentina", "pbfBytes": 433595014, "enabled": true, "group": 1 },
+    { "code": "BR", "name": "Brazil", "geofabrik": "south-america/brazil", "pbfBytes": 2096862892, "enabled": true, "group": 3 },
 
-    { "code": "AU", "name": "Australia", "geofabrik": "australia-oceania/australia", "pbfBytes": 969587431, "enabled": false, "group": 3 },
+    { "code": "AU", "name": "Australia", "geofabrik": "australia-oceania/australia", "pbfBytes": 969587431, "enabled": true, "group": 3 },
 
     { "code": "BD", "name": "Bangladesh", "geofabrik": "asia/bangladesh", "pbfBytes": 355863155, "enabled": false, "group": 4 },
     { "code": "CN", "name": "China", "geofabrik": "asia/china", "pbfBytes": 1612805486, "enabled": false, "group": 2 },
