@@ -126,7 +126,7 @@ jobs:
     name: Build ${{ matrix.code }}
     needs: prepare
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     strategy:
       # Keep going so one bad country does not hide the others: the deploy job
       # publishes whatever succeeded and keeps a failed country's last good
